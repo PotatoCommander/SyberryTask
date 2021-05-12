@@ -70,7 +70,14 @@ public class Rover
     public class PriorityQueue
     {
         private List<Tuple<VertexPlace, int>> elements = new();
-        
+
+        public int Count
+        {
+            get
+            {
+                return elements.Count;
+            }
+        }
         public void Enqueue(VertexPlace item, int priority)
         {
             elements.Add(Tuple.Create(item, priority));
@@ -78,9 +85,18 @@ public class Rover
 
         public VertexPlace Dequeue()
         {
-            var returnable = elements[^1];
-            elements.RemoveAt(elements.Count - 1);
-            return returnable;
+            var bestIndex = 0;
+            for (var i = 0; i < elements.Count; i++)
+            {
+                if (elements[i].Item2 < elements[bestIndex].Item2)
+                {
+                    bestIndex = i;
+                }
+            }
+
+            var bestItem = elements[bestIndex].Item1;
+            elements.RemoveAt(bestIndex);
+            return bestItem;
         }
     }
     
