@@ -3,13 +3,25 @@ using System.Collections.Generic;
 
 public class Rover 
 {
-    public class LatticeGraph
+    static public int Function(VertexPlace a, VertexPlace b)
     {
-        public int[,] weights;
+        return Math.Abs(a.X - b.X) + Math.Abs(a.Y - b.Y);
+    }
+    
+    
+    public static void CalculateRoverPath(int[,] map)
+    {
         
-        public int width;
-        public int height;
-        public  int[][] directions = 
+    }
+}
+public class LatticeGraph
+    {
+        private int[,] weights;
+
+        private int width;
+        private int height;
+
+        private int[][] directions = 
         {
             //Left
             new int[] { 1, 0 },
@@ -57,7 +69,7 @@ public class Rover
             return listOfNeighbours;
         }
     }
-    public class VertexPlace
+public class VertexPlace
     {
         public int X;
         public int Y;
@@ -66,29 +78,46 @@ public class Rover
             this.X = x;
             this.Y = y;
         }
-    }
-    public class PriorityQueue
-    {
-        private List<Tuple<VertexPlace, int>> elements = new();
 
-        public int Count
+        public override bool Equals(object? obj)
         {
-            get
-            {
-                return elements.Count;
-            }
+             return Equals(obj as VertexPlace);
         }
-        public void Enqueue(VertexPlace item, int priority)
+
+        protected bool Equals(VertexPlace other)
+        {
+            return X == other.X && Y == other.Y;
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(X, Y);
+        }
+    }
+
+public class Vertex
+{
+    public VertexPlace Location;
+    public int Priority;
+}
+public class PriorityQueue
+    {
+        private List<Tuple<VertexPlace, double>> elements = new();
+
+        public int Count => elements.Count;
+
+        public void Enqueue(VertexPlace item, double priority)
         {
             elements.Add(Tuple.Create(item, priority));
         }
 
         public VertexPlace Dequeue()
         {
-            var bestIndex = 0;
-            for (var i = 0; i < elements.Count; i++)
+            int bestIndex = 0;
+
+            for (int i = 0; i < elements.Count; i++) 
             {
-                if (elements[i].Item2 < elements[bestIndex].Item2)
+                if (elements[i].Item2 < elements[bestIndex].Item2) 
                 {
                     bestIndex = i;
                 }
@@ -98,10 +127,45 @@ public class Rover
             elements.RemoveAt(bestIndex);
             return bestItem;
         }
-    }
+        }
+public class AStarSearch
+{
+    public List<VertexPlace> cameFrom
+        = new List<VertexPlace>();
+    public Dictionary<VertexPlace, int> costSoFar
+        = new Dictionary<VertexPlace, int>();
     
-    public static void CalculateRoverPath(int[,] map)
+
+    public AStarSearch(LatticeGraph graph, VertexPlace start, VertexPlace goal)
     {
+        var frontier = new PriorityQueue();
+        frontier.Enqueue(start, 0);
+
+        cameFrom.Add(start);
+        costSoFar[start] = 0;
+
+        while (frontier.Count > 0)
+        {
+            var current = frontier.Dequeue();
+
+            if (current.X == goal.X && current.Y == goal.Y)
+            {
+                cameFrom.Add(goal);
+                break;
+            }
+
+            foreach (var next in graph.GetNeighbours(current))
+            {
+                int newCost = costSoFar[current] + graph.GetCost(current, next);
+                if (!costSoFar.ContainsKey(next) || newCost < costSoFar[next])
+                {
+                    costSoFar[next] = newCost;
+                    int priority = newCost + Rover.Function(next, goal);
+                    frontier.Enqueue(next, priority);
+                    cameFrom.Add(current);
+                }
+            }
+        }
     }
-    
 }
+    
