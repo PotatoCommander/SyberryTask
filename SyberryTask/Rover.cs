@@ -69,11 +69,11 @@ public class Rover
     }
     public class PriorityQueue
     {
-        private List<VertexPlace> elements = new();
+        private List<Tuple<VertexPlace, int>> elements = new();
         
-        public void Enqueue(VertexPlace item)
+        public void Enqueue(VertexPlace item, int priority)
         {
-            elements.Add(item);
+            elements.Add(Tuple.Create(item, priority));
         }
 
         public VertexPlace Dequeue()
