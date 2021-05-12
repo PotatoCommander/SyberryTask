@@ -21,6 +21,12 @@ public class Rover
             new int[] { 0, -1}
         };
 
+        public LatticeGraph(int[,] array)
+        {
+            weights = array;
+            width = array.GetLength(0);
+            height = array.GetLength(1);
+        }
         //returns: weight of edge between two neighbour vertexes in graph
         //TODO: make sure that this method calls only for neighbours
         public int GetCost(VertexPlace a, VertexPlace b)
@@ -31,7 +37,8 @@ public class Rover
             var y2 = b.Y;
             return Math.Abs(weights[x1, y1] - weights[x2, y2]) + 1;
         }
-        public bool IsInMatrix(VertexPlace coords)
+
+        private bool IsInMatrix(VertexPlace coords)
         {
             return (0 <= coords.X && coords.X < width && 0 <= coords.Y && coords.Y < height);
         }
@@ -60,7 +67,23 @@ public class Rover
             this.Y = y;
         }
     }
+    public class PriorityQueue
+    {
+        private List<VertexPlace> elements = new();
+        
+        public void Enqueue(VertexPlace item)
+        {
+            elements.Add(item);
+        }
 
+        public VertexPlace Dequeue()
+        {
+            var returnable = elements[^1];
+            elements.RemoveAt(elements.Count - 1);
+            return returnable;
+        }
+    }
+    
     public static void CalculateRoverPath(int[,] map)
     {
     }
