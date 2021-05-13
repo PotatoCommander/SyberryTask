@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 
 public class Rover 
 {
@@ -13,7 +12,25 @@ public class Rover
     
     public static void CalculateRoverPath(int[,] map)
     {
+        var graph = new LatticeGraph(map);
+        var astar = new AStarSearch(graph);
+        var result = astar.ExtractPath();
+        var score = astar.ExtractCost(result);
+        result.Reverse();
+        Test.WriteInFile("GUI");
+        Console.WriteLine();
+    }
+}
+public static class Test
+{
+    public static void WriteInFile(string text)
+    {
+        var path = @"path-plan.txt";
         
+        if (!File.Exists(path))
+        {
+            File.WriteAllText(AppDomain.CurrentDomain.BaseDirectory + path, text);
+        }
     }
 }
 public class LatticeGraph
@@ -185,6 +202,18 @@ public class AStarSearch
         path.Add(cameFrom[0].To);
 
         return path;
+    }
+
+    public int ExtractCost(List<VertexPlace> path)
+    {
+        var len = path.Count;
+        var sum = 0;
+        for (int i = 1; i < len; i++)
+        {
+            sum += graph.GetCost(path[i], path[i - 1]);
+        }
+
+        return sum;
     }
 }
 
