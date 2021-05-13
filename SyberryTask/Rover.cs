@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 public class Rover 
 {
@@ -97,8 +98,8 @@ public class VertexPlace
 
 public class Vertex
 {
-    public VertexPlace Location;
-    public int Priority;
+    public VertexPlace From;
+    public VertexPlace To;
 }
 public class PriorityQueue
     {
@@ -130,42 +131,55 @@ public class PriorityQueue
         }
 public class AStarSearch
 {
-    public List<VertexPlace> cameFrom
-        = new List<VertexPlace>();
+    public List<Vertex> cameFrom = new List<Vertex>();
     public Dictionary<VertexPlace, int> costSoFar
         = new Dictionary<VertexPlace, int>();
     
-
+    
     public AStarSearch(LatticeGraph graph, VertexPlace start, VertexPlace goal)
     {
         var frontier = new PriorityQueue();
         frontier.Enqueue(start, 0);
 
-        cameFrom.Add(start);
+        cameFrom.Add(new Vertex(){From = null, To = start});
         costSoFar[start] = 0;
 
         while (frontier.Count > 0)
         {
             var current = frontier.Dequeue();
 
-            if (current.X == goal.X && current.Y == goal.Y)
+            if (current.Equals(goal))
             {
-                cameFrom.Add(goal);
                 break;
             }
 
             foreach (var next in graph.GetNeighbours(current))
             {
-                int newCost = costSoFar[current] + graph.GetCost(current, next);
-                if (!costSoFar.ContainsKey(next) || newCost < costSoFar[next])
+                int newCost = costSoFar[current]
+                                 + graph.GetCost(current, next);
+                if (!costSoFar.ContainsKey(next)
+                    || newCost < costSoFar[next])
                 {
                     costSoFar[next] = newCost;
                     int priority = newCost + Rover.Function(next, goal);
                     frontier.Enqueue(next, priority);
-                    cameFrom.Add(current);
+                    cameFrom.Add(new Vertex(){From = current, To = next});
                 }
             }
         }
     }
+
+    public List<VertexPlace> ExtractPath()
+    {
+        var path = new List<VertexPlace>();
+        var fromelem = cameFrom[^1].From;
+        while (!fromelem.Equals(new VertexPlace(0,0)))
+        {
+            path.Add(fromelem);
+            fromelem = cameFrom.Find(x => Equals(x.To, fromelem)).From;
+        }
+
+        return path;
+    }
 }
-    
+
