@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 public class Rover 
@@ -17,7 +18,7 @@ public class Rover
 }
 public class LatticeGraph
     {
-        private int[,] weights;
+        public int[,] weights;
 
         private int width;
         private int height;
@@ -41,7 +42,6 @@ public class LatticeGraph
             height = array.GetLength(1);
         }
         //returns: weight of edge between two neighbour vertexes in graph
-        //TODO: make sure that this method calls only for neighbours
         public int GetCost(VertexPlace a, VertexPlace b)
         {
             var x1 = a.X;
@@ -101,7 +101,7 @@ public class Vertex
     public VertexPlace From;
     public VertexPlace To;
 }
-public class PriorityQueue
+public class QueueWithPriority
     {
         private List<Tuple<VertexPlace, double>> elements = new();
 
@@ -131,14 +131,16 @@ public class PriorityQueue
         }
 public class AStarSearch
 {
-    public List<Vertex> cameFrom = new List<Vertex>();
-    public Dictionary<VertexPlace, int> costSoFar
-        = new Dictionary<VertexPlace, int>();
+    private List<Vertex> cameFrom = new();
+    private Dictionary<VertexPlace, int> costSoFar = new();
+    public LatticeGraph graph;
     
-    
-    public AStarSearch(LatticeGraph graph, VertexPlace start, VertexPlace goal)
+    public AStarSearch(LatticeGraph g)
     {
-        var frontier = new PriorityQueue();
+        graph = g;
+        var start = new VertexPlace(0, 0);
+        var goal = new VertexPlace(graph.weights.GetLength(0) - 1, graph.weights.GetLength(1) - 1);
+        var frontier = new QueueWithPriority();
         frontier.Enqueue(start, 0);
 
         cameFrom.Add(new Vertex(){From = null, To = start});
@@ -148,7 +150,7 @@ public class AStarSearch
         {
             var current = frontier.Dequeue();
 
-            if (current.Equals(goal))
+            if (current.X == goal.X && current.Y == goal.Y)
             {
                 break;
             }
@@ -172,12 +174,15 @@ public class AStarSearch
     public List<VertexPlace> ExtractPath()
     {
         var path = new List<VertexPlace>();
-        var fromelem = cameFrom[^1].From;
-        while (!fromelem.Equals(new VertexPlace(0,0)))
+        var elem = cameFrom.Find(x => Equals(x.To, new VertexPlace(graph.weights.GetLength(0) - 1,graph.weights.GetLength(1) - 1)));
+        path.Add(elem.To);
+        var fromelem = elem.From;
+        while (fromelem != null && !fromelem.Equals(new VertexPlace(0,0)))
         {
             path.Add(fromelem);
-            fromelem = cameFrom.Find(x => Equals(x.To, fromelem)).From;
+            fromelem = cameFrom.Find(x => Equals(x.To, fromelem))?.From;
         }
+        path.Add(cameFrom[0].To);
 
         return path;
     }
