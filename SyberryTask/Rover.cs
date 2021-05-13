@@ -9,36 +9,43 @@ public class Rover
         return Math.Abs(a.X - b.X) + Math.Abs(a.Y - b.Y);
     }
     
-    
     public static void CalculateRoverPath(int[,] map)
     {
         var graph = new LatticeGraph(map);
         var astar = new AStarSearch(graph);
-        var result = astar.ExtractPath();
-        var score = astar.ExtractCost(result);
-        result.Reverse();
-        Test.WriteInFile("GUI");
-        Console.WriteLine();
+        
+        var path = astar.ExtractPath();
+        path.Reverse();
+        var fuel = astar.ExtractCost(path);
+        var steps = path.Count - 1;
+
+        var pathString = $"[{path[0].X}][{path[0].Y}]";
+        if (steps > 0)
+        {
+            for (var i = 1; i <= steps; i++)
+            {
+                pathString += $"->[{path[i].X}][{path[i].Y}]";
+            }
+        }
+
+        var stringToFile = pathString + "\n" + $"steps: {steps}\n" + $"fuel: {fuel}";
+        FileHelper.WriteInFile(stringToFile);
     }
 }
-public static class Test
+public static class FileHelper
 {
     public static void WriteInFile(string text)
     {
-        var path = @"path-plan.txt";
-        
-        if (!File.Exists(path))
-        {
-            File.WriteAllText(AppDomain.CurrentDomain.BaseDirectory + path, text);
-        }
+        var fileName = "path-plan.txt";
+        File.WriteAllTextAsync(fileName, text);
     }
 }
 public class LatticeGraph
     {
         public int[,] weights;
 
-        private int width;
-        private int height;
+        public int width;
+        public int height;
 
         private int[][] directions = 
         {
@@ -148,24 +155,24 @@ public class QueueWithPriority
         }
 public class AStarSearch
 {
-    private List<Vertex> cameFrom = new();
-    private Dictionary<VertexPlace, int> costSoFar = new();
+    private List<Vertex> pathVertices = new();
+    private Dictionary<VertexPlace, int> verticesCost = new();
     public LatticeGraph graph;
-    
+
     public AStarSearch(LatticeGraph g)
     {
         graph = g;
         var start = new VertexPlace(0, 0);
-        var goal = new VertexPlace(graph.weights.GetLength(0) - 1, graph.weights.GetLength(1) - 1);
-        var frontier = new QueueWithPriority();
-        frontier.Enqueue(start, 0);
+        var goal = new VertexPlace(graph.width - 1, graph.height - 1);
+        var reachableVertices = new QueueWithPriority();
+        reachableVertices.Enqueue(start, 0);
 
-        cameFrom.Add(new Vertex(){From = null, To = start});
-        costSoFar[start] = 0;
+        pathVertices.Add(new Vertex(){From = null, To = start});
+        verticesCost[start] = 0;
 
-        while (frontier.Count > 0)
+        while (reachableVertices.Count > 0)
         {
-            var current = frontier.Dequeue();
+            var current = reachableVertices.Dequeue();
 
             if (current.X == goal.X && current.Y == goal.Y)
             {
@@ -174,15 +181,13 @@ public class AStarSearch
 
             foreach (var next in graph.GetNeighbours(current))
             {
-                int newCost = costSoFar[current]
-                                 + graph.GetCost(current, next);
-                if (!costSoFar.ContainsKey(next)
-                    || newCost < costSoFar[next])
+                var newCost = verticesCost[current] + graph.GetCost(current, next);
+                if (!verticesCost.ContainsKey(next) || newCost < verticesCost[next])
                 {
-                    costSoFar[next] = newCost;
-                    int priority = newCost + Rover.Function(next, goal);
-                    frontier.Enqueue(next, priority);
-                    cameFrom.Add(new Vertex(){From = current, To = next});
+                    verticesCost[next] = newCost;
+                    var priority = newCost + Rover.Function(next, goal);
+                    reachableVertices.Enqueue(next, priority);
+                    pathVertices.Add(new Vertex() {From = current, To = next});
                 }
             }
         }
@@ -190,22 +195,30 @@ public class AStarSearch
 
     public List<VertexPlace> ExtractPath()
     {
+        if (pathVertices.Count == 1)
+        {
+            return new List<VertexPlace>() {new VertexPlace(pathVertices[0].To.X, pathVertices[0].To.Y)};
+        }
         var path = new List<VertexPlace>();
-        var elem = cameFrom.Find(x => Equals(x.To, new VertexPlace(graph.weights.GetLength(0) - 1,graph.weights.GetLength(1) - 1)));
+        var elem = pathVertices.Find(x => Equals(x.To, new VertexPlace(graph.width - 1, graph.height - 1)));
         path.Add(elem.To);
         var fromelem = elem.From;
         while (fromelem != null && !fromelem.Equals(new VertexPlace(0,0)))
         {
             path.Add(fromelem);
-            fromelem = cameFrom.Find(x => Equals(x.To, fromelem))?.From;
+            fromelem = pathVertices.Find(x => Equals(x.To, fromelem))?.From;
         }
-        path.Add(cameFrom[0].To);
+        path.Add(pathVertices[0].To);
 
         return path;
     }
 
     public int ExtractCost(List<VertexPlace> path)
     {
+        if (path.Count == 1)
+        {
+            return 0;
+        }
         var len = path.Count;
         var sum = 0;
         for (int i = 1; i < len; i++)
